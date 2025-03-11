@@ -1,0 +1,636 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+ <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Game 2D</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            overflow: hidden;
+            border: 4px solid #444;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #game-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://i.postimg.cc/cHwJc8fk/sfondo-livello-2.png');
+            background-size: cover;
+            image-rendering: pixelated;
+        }
+
+        #player {
+            position: absolute;
+            width: 157.5px; /* Aumentato di 1.5x da 105px */
+            height: 225px; /* Aumentato di 1.5x da 150px */
+            background-image: url('https://i.postimg.cc/tC5YfPwL/aeryn-giocatore-che-sguaina-la-spada.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            bottom: 60px;
+            left: 100px;
+            transition: background-image 0.1s;
+        }
+
+        #enemy {
+            position: absolute;
+            width: 157.5px; /* Aumentato di 1.5x da 105px */
+            height: 225px; /* Aumentato di 1.5x da 150px */
+            background-image: url('https://i.postimg.cc/FKfz76z4/nyxar.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            bottom: 60px;
+            right: 100px;
+            transform: scaleX(-1);
+            transition: background-image 0.1s;
+        }
+
+        .platform {
+            position: absolute;
+            width: 100%;
+            height: 60px;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            text-shadow: 2px 2px 2px #000;
+        }
+
+        #game-over {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #a00;
+            font-size: 36px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #enemy-image {
+            width: 157.5px; /* Stessa dimensione del nemico nel gioco */
+            height: 225px;
+            background-image: url('https://i.postimg.cc/FKfz76z4/nyxar.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            margin: 20px 0;
+        }
+
+        #win-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #0a0;
+            font-size: 36px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #start-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 28px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #start-screen h1 {
+            color: #0af;
+            text-shadow: 0 0 10px #0af;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        #start-screen p {
+            margin: 10px 0;
+        }
+
+        #epic-quote {
+            color: #f5a;
+            font-style: italic;
+            margin: 20px 0;
+            max-width: 80%;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        #aeryn-image {
+            width: 157.5px; /* Stessa dimensione del giocatore nel gioco */
+            height: 225px;
+            background-image: url('https://i.postimg.cc/tC5YfPwL/aeryn-giocatore-che-sguaina-la-spada.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            margin: 15px 0;
+        }
+
+        #credits {
+            font-size: 16px;
+            margin-top: 15px;
+            color: #ccc;
+            max-width: 90%;
+            line-height: 1.4;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: 2px solid #555;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        #start-button {
+            background-color: #0a5;
+            border: 2px solid #0c7;
+            padding: 15px 30px;
+            font-size: 22px;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 170, 85, 0.5);
+        }
+
+        #start-button:hover {
+            background-color: #0c7;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-background"></div>
+        <div class="platform"></div>
+        <div id="player"></div>
+        <div id="enemy"></div>
+        <div id="hud">
+            Giocatore: <span id="player-lives">5</span> vite | 
+            Nemico: <span id="enemy-lives">10</span> vite
+        </div>
+        <div id="game-over">
+            <h1>Game Over</h1>
+            <p>L'oscurità ha trionfato. La tua anima è perduta per sempre...</p>
+            <div id="enemy-image"></div>
+            <button id="restart-button">Ricomincia</button>
+        </div>
+        <div id="win-screen">
+            <h1>Hai Vinto!</h1>
+            <p>Hai sconfitto il nemico e portato la luce nell'oscurità!</p>
+            <button id="play-again-button">Gioca Ancora</button>
+        </div>
+        <div id="start-screen">
+            <h1>Platform Game 2D</h1>
+            <p>Una battaglia epica tra luce e oscurità</p>
+            <div id="aeryn-image"></div>
+            <div id="epic-quote">"Nel cuore dell'oscurità, solo i valorosi osano combattere. Sarai tu il campione della luce?"</div>
+            <button id="start-button">Inizia l'avventura</button>
+            <div id="credits">
+                PNRR – LA SCUOLA FUTURA<br>
+                "STEM e Multilinguismo a scuola: learning by doing"<br>
+                Laboratorio co-curricolare "Pensiero Computazionale per Creare e Apprendere"<br>
+                Tutor: <strong>Prof.ssa Russo Simona</strong><br>
+                Docente Esperto Formatore: <strong>Ing. Azzarelli Giampiero</strong><br>
+                Creato da: Raciti Rosario
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // Registra il Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+
+        // Il tuo JavaScript esistente
+        // Elementi del gioco
+        const player = document.getElementById('player');
+        const enemy = document.getElementById('enemy');
+        const playerLivesDisplay = document.getElementById('player-lives');
+        const enemyLivesDisplay = document.getElementById('enemy-lives');
+        const gameOverScreen = document.getElementById('game-over');
+        const winScreen = document.getElementById('win-screen');
+        const startScreen = document.getElementById('start-screen');
+        const restartButton = document.getElementById('restart-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const startButton = document.getElementById('start-button');
+        const gameContainer = document.getElementById('game-container');
+
+        // Stato del gioco
+        let playerLives = 5;
+        let enemyLives = 10;
+        let playerPosition = { x: 0, y: 60 };
+        let enemyPosition = { x: 0, y: 60 };
+        let playerVelocity = { x: 0, y: 0 };
+        let playerJumps = 0;
+        let isAttacking = false;
+        let canAttack = true;
+        let enemyIsAttacking = false;
+        let gameRunning = false;
+        let keys = {};
+        let gravity = 0.6;
+        let enemyDirection = 1;
+        let enemySpeed = 4;
+        let platformHeight = 60;
+        let containerWidth = 800;
+        let containerHeight = 500;
+        // Dimensioni aumentate di 1.5x
+        let playerWidth = 157.5;  // Originale: 105 * 1.5
+        let playerHeight = 225;   // Originale: 150 * 1.5
+        let enemyWidth = 157.5;   // Originale: 105 * 1.5
+        let enemyHeight = 225;    // Originale: 150 * 1.5
+        let playerAttackTimer = null;
+        let enemyAttackTimer = null;
+        let enemyAttackCooldown = 0;
+        let jumpHeight = playerHeight * 2.5; // Salto pari a 2.5 volte l'altezza del giocatore
+        let isJumping = false;
+        let enemySpawned = false;
+        let lastJumpTime = 0;
+
+        // Inizializzazione
+        function initGame() {
+            playerLives = 5;
+            enemyLives = 10;
+            
+            // Posiziona il giocatore al centro
+            playerPosition = { 
+                x: (containerWidth - playerWidth) / 2, 
+                y: platformHeight 
+            };
+            
+            // Nascondi temporaneamente il nemico
+            enemy.style.display = 'none';
+            enemySpawned = false;
+            
+            playerVelocity = { x: 0, y: 0 };
+            playerJumps = 0;
+            isAttacking = false;
+            enemyIsAttacking = false;
+            canAttack = true;
+            gameRunning = true;
+            updateUI();
+            
+            // Ripristina immagini originali
+            player.style.backgroundImage = "url('https://i.postimg.cc/tC5YfPwL/aeryn-giocatore-che-sguaina-la-spada.png')";
+            enemy.style.backgroundImage = "url('https://i.postimg.cc/FKfz76z4/nyxar.png')";
+            
+            // Rimuovi le schermate
+            gameOverScreen.style.display = 'none';
+            winScreen.style.display = 'none';
+            startScreen.style.display = 'none';
+            
+            // Spawn del nemico dagli estremi dopo un breve ritardo
+            setTimeout(spawnEnemy, 1000);
+            
+            updatePositions();
+        }
+
+        // Spawn del nemico dagli estremi dello schermo
+        function spawnEnemy() {
+            if (!gameRunning) return;
+            
+            // Decide da quale lato far entrare il nemico
+            const fromLeft = Math.random() > 0.5;
+            
+            if (fromLeft) {
+                enemyPosition.x = -enemyWidth;
+                enemy.style.transform = 'scaleX(1)';
+                enemyDirection = 1;
+            } else {
+                enemyPosition.x = containerWidth;
+                enemy.style.transform = 'scaleX(-1)';
+                enemyDirection = -1;
+            }
+            
+            enemyPosition.y = platformHeight;
+            enemy.style.display = 'block';
+            enemySpawned = true;
+        }
+
+        // Aggiorna l'interfaccia utente
+        function updateUI() {
+            playerLivesDisplay.textContent = playerLives;
+            enemyLivesDisplay.textContent = enemyLives;
+        }
+
+        // Aggiorna le posizioni degli elementi
+        function updatePositions() {
+            player.style.left = `${playerPosition.x}px`;
+            player.style.bottom = `${playerPosition.y}px`;
+            enemy.style.left = `${enemyPosition.x}px`;
+            enemy.style.bottom = `${enemyPosition.y}px`;
+        }
+
+        // Funzione di attacco del giocatore
+        function playerAttack() {
+            if (!canAttack || !gameRunning) return;
+            
+            isAttacking = true;
+            canAttack = false;
+            
+            // Cambia l'immagine durante l'attacco
+            player.style.backgroundImage = "url('https://i.postimg.cc/dVVLK3KD/earyn-che-fa-l-attacco-2.png')";
+            
+            // Controlla se il nemico è nel raggio d'attacco
+            const playerFacing = playerVelocity.x >= 0 ? 1 : -1;
+            const attackRange = 120;
+            
+            // Calcolo se l'attacco colpisce
+            const playerCenter = playerPosition.x + playerWidth / 2;
+            const enemyCenter = enemyPosition.x + enemyWidth / 2;
+            const distance = Math.abs(playerCenter - enemyCenter);
+            
+            if (distance < attackRange) {
+                enemyLives--;
+                updateUI();
+                
+                // Controllo vittoria
+                if (enemyLives <= 0) {
+                    gameRunning = false;
+                    winScreen.style.display = 'flex';
+                }
+            }
+            
+            // Resetta l'attacco dopo un breve intervallo
+            clearTimeout(playerAttackTimer);
+            playerAttackTimer = setTimeout(() => {
+                isAttacking = false;
+                player.style.backgroundImage = "url('https://i.postimg.cc/tC5YfPwL/aeryn-giocatore-che-sguaina-la-spada.png')";
+                
+                // Permetti un nuovo attacco dopo un cooldown
+                setTimeout(() => {
+                    canAttack = true;
+                }, 300);
+            }, 200);
+        }
+
+        // Funzione per controllare il salto sulla testa del nemico
+        function checkJumpAttack() {
+            if (!gameRunning || !isJumping || !enemySpawned) return;
+            
+            // Verifica se il giocatore è sopra il nemico
+            const playerBottom = playerPosition.y;
+            const playerLeft = playerPosition.x;
+            const playerRight = playerPosition.x + playerWidth;
+            
+            const enemyTop = enemyPosition.y + enemyHeight;
+            const enemyLeft = enemyPosition.x;
+            const enemyRight = enemyPosition.x + enemyWidth;
+            
+            // Controlla se il giocatore è sopra il nemico e sta cadendo
+            if (playerVelocity.y < 0 && 
+                playerBottom >= enemyTop - 20 && 
+                playerBottom <= enemyTop + 10 &&
+                playerRight > enemyLeft + 20 && 
+                playerLeft < enemyRight - 20) {
+                
+                // Rimbalza il giocatore
+                playerVelocity.y = 8;
+                
+                // Toglie una vita al nemico
+                enemyLives--;
+                updateUI();
+                
+                // Controllo vittoria
+                if (enemyLives <= 0) {
+                    gameRunning = false;
+                    winScreen.style.display = 'flex';
+                }
+            }
+        }
+
+        // Funzione di attacco del nemico
+        function enemyAttack() {
+            if (enemyAttackCooldown > 0 || !gameRunning || enemyIsAttacking || !enemySpawned) return;
+            
+            // Calcolo se l'attacco colpisce
+            const enemyCenter = enemyPosition.x + enemyWidth / 2;
+            const playerCenter = playerPosition.x + playerWidth / 2;
+            const distance = Math.abs(playerCenter - enemyCenter);
+            
+            if (distance < 157.5) { // Aumentato da 105 a 157.5 per adattarsi alle nuove dimensioni
+                enemyIsAttacking = true;
+                
+                // Cambia l'immagine dell'attacco nemico
+                enemy.style.backgroundImage = "url('https://i.postimg.cc/y8pW6KVj/nyxar-attacco-1.png')";
+                
+                // Attacca dopo un breve ritardo per mostrare l'animazione
+                setTimeout(() => {
+                    if (gameRunning) {
+                        playerLives--;
+                        updateUI();
+                        
+                        // Controllo game over
+                        if (playerLives <= 0) {
+                            gameRunning = false;
+                            gameOverScreen.style.display = 'flex';
+                        }
+                    }
+                }, 100);
+                
+                // Ripristina l'immagine normale dopo l'attacco
+                clearTimeout(enemyAttackTimer);
+                enemyAttackTimer = setTimeout(() => {
+                    enemyIsAttacking = false;
+                    enemy.style.backgroundImage = "url('https://i.postimg.cc/FKfz76z4/nyxar.png')";
+                    enemyAttackCooldown = 30;
+                }, 300);
+            }
+        }
+
+        // Gestione del salto
+        function jump() {
+            if (playerJumps < 2 && gameRunning) {
+                // Calcola la velocità del salto per raggiungere l'altezza desiderata
+                // Formula: v = sqrt(2 * g * h)
+                playerVelocity.y = Math.sqrt(2 * gravity * jumpHeight);
+                playerJumps++;
+                isJumping = true;
+                lastJumpTime = Date.now();
+            }
+        }
+
+        // Logica di aggiornamento principale
+        function update() {
+            if (!gameRunning) return;
+            
+            // Aggiorna la posizione del giocatore in base ai tasti premuti
+            if (keys['a'] || keys['A']) {
+                playerVelocity.x = -5;
+                player.style.transform = 'scaleX(-1)';
+            } else if (keys['d'] || keys['D']) {
+                playerVelocity.x = 5;
+                player.style.transform = 'scaleX(1)';
+            } else {
+                playerVelocity.x = 0;
+            }
+            
+            // Applicazione della gravità
+            playerVelocity.y -= gravity;
+            
+            // Aggiornamento posizione
+            playerPosition.x += playerVelocity.x;
+            playerPosition.y += playerVelocity.y;
+            
+            // Collisione con il pavimento
+            if (playerPosition.y < platformHeight) {
+                playerPosition.y = platformHeight;
+                playerVelocity.y = 0;
+                playerJumps = 0; // Resetta i salti quando tocchi il terreno
+                isJumping = false;
+            }
+            
+            // Limiti dello schermo per il giocatore
+            if (playerPosition.x < 0) playerPosition.x = 0;
+            if (playerPosition.x > containerWidth - playerWidth) playerPosition.x = containerWidth - playerWidth;
+            
+            // Controlla se il giocatore salta sulla testa del nemico
+            checkJumpAttack();
+            
+            // Logica del nemico (solo se non sta attaccando e se è stato spawnato)
+            if (!enemyIsAttacking && enemySpawned) {
+                // Se il nemico è appena entrato nella stanza, fallo muovere verso l'interno
+                if ((enemyDirection > 0 && enemyPosition.x < 100) || 
+                    (enemyDirection < 0 && enemyPosition.x > containerWidth - enemyWidth - 100)) {
+                    // Continua nella direzione iniziale
+                } else {
+                    // Movimento casuale con probabilità di seguire il giocatore
+                    if (Math.random() < 0.02) {
+                        // Cambia direzione casualmente
+                        enemyDirection = Math.random() > 0.5 ? 1 : -1;
+                        enemy.style.transform = enemyDirection > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                    } else if (Math.random() < 0.03) {
+                        // Segui il giocatore
+                        enemyDirection = playerPosition.x > enemyPosition.x ? 1 : -1;
+                        enemy.style.transform = enemyDirection > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                    }
+                }
+                
+                // Aggiorna la posizione del nemico
+                enemyPosition.x += enemyDirection * enemySpeed;
+                
+                // Limiti dello schermo per il nemico
+                if (enemyPosition.x < 0) {
+                    enemyPosition.x = 0;
+                    enemyDirection *= -1;
+                    enemy.style.transform = enemyDirection > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                }
+                if (enemyPosition.x > containerWidth - enemyWidth) {
+                    enemyPosition.x = containerWidth - enemyWidth;
+                    enemyDirection *= -1;
+                    enemy.style.transform = enemyDirection > 0 ? 'scaleX(1)' : 'scaleX(-1)';
+                }
+                
+                // Attacco nemico con probabilità aumentata
+                if (Math.random() < 0.02) enemyAttack();
+            }
+            
+            // Riduzione del cooldown attacco nemico
+            if (enemyAttackCooldown > 0) enemyAttackCooldown--;
+            
+            // Aggiorna le posizioni degli elementi
+            updatePositions();
+        }
+
+        // Gestione eventi tastiera
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            // Salto con barra spaziatrice
+            if ((e.key === ' ' || e.key === 'w' || e.key === 'W') && gameRunning) {
+                jump();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Gestione eventi mouse
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Tasto sinistro
+                playerAttack();
+            } else if (e.button === 2) { // Tasto destro
+                jump();
+            }
+        });
+
+        // Disabilita menu contestuale per permettere l'uso del tasto destro
+        gameContainer.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Eventi per i pulsanti
+        restartButton.addEventListener('click', initGame);
+        playAgainButton.addEventListener('click', initGame);
+        startButton.addEventListener('click', initGame);
+
+        // Avvia il loop di gioco
+        function gameLoop() {
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Mostra la schermata iniziale
+        function showStartScreen() {
+            startScreen.style.display = 'flex';
+            gameRunning = false;
+        }
+
+        // Inizializza la schermata iniziale e avvia il loop di gioco
+        showStartScreen();
+        gameLoop();
+    </script>
+</body>
+</html>
